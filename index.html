@@ -418,13 +418,27 @@
         }
 
         function generateObstacles() {
-            obstacles = [];
-            const numObstacles = 10 + level * 3;
+            // Calculate screen area and aspect ratio for dynamic scaling
+            const area = canvasSize.width * canvasSize.height;
+            const aspectRatio = canvasSize.width / canvasSize.height;
+            const isMobile = canvasSize.width < 640;
+            
+            // Dynamic obstacle count based on area and level
+            const baseCount = Math.floor(area / 20000); // ~1 obstacle per 20k pixels
+            const numObstacles = baseCount + level * 2;
+            
+            // Dynamic radius scaling
+            const minRadius = isMobile ? 12 : 18;
+            const maxRadius = isMobile ? 25 : 35;
+            const radiusVariability = maxRadius - minRadius;
             
             for (let i = 0; i < numObstacles; i++) {
                 let attempts = 0;
                 while (attempts < 100) {
-                    const radius = 20 + Math.random() * 30;
+                    // Variable radius with some larger obstacles
+                    const radiusRandom = Math.random();
+                    const radius = minRadius + radiusRandom * radiusVariability;
+                    
                     const x = 150 + Math.random() * (canvasSize.width - 300);
                     const y = radius + Math.random() * (canvasSize.height - radius * 2);
                     
