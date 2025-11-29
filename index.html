@@ -434,8 +434,20 @@
             placingMirror = null;
             gameWon = false;
             
-            // Fixed obstacle generation for consistent puzzles
-            const numObstacles = 6 + level * 2;
+            // First, place an obstacle that ALWAYS blocks the direct path
+            const t = 0.3 + Math.random() * 0.4;
+            const centerX = LASER_START.x + (TARGET.x - LASER_START.x) * t;
+            const centerY = LASER_START.y + (TARGET.y - LASER_START.y) * t;
+            const offsetY = (Math.random() - 0.5) * 100;
+            const radius = 25 + Math.random() * 25;
+            obstacles.push({ 
+                x: centerX, 
+                y: centerY + offsetY, 
+                radius 
+            });
+            
+            // Now add the rest of the obstacles randomly
+            const numObstacles = 5 + level * 2; // One less since we already placed one
             const minRadius = 18;
             const maxRadius = 35;
             const radiusVariability = maxRadius - minRadius;
@@ -474,24 +486,6 @@
                     }
                     attempts++;
                 }
-            }
-            
-            const directPathBlocked = obstacles.some(obs => {
-                const hit = lineIntersectsCircle(LASER_START, TARGET, obs);
-                return hit !== null;
-            });
-            
-            if (!directPathBlocked) {
-                const t = 0.3 + Math.random() * 0.4;
-                const centerX = LASER_START.x + (TARGET.x - LASER_START.x) * t;
-                const centerY = LASER_START.y + (TARGET.y - LASER_START.y) * t;
-                const offsetY = (Math.random() - 0.5) * 100;
-                const radius = 25 + Math.random() * 25;
-                obstacles.push({ 
-                    x: centerX, 
-                    y: centerY + offsetY, 
-                    radius 
-                });
             }
             
             mirrors = [];
