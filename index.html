@@ -435,11 +435,12 @@
             gameWon = false;
             
             // First, place an obstacle that ALWAYS blocks the direct path
+            // Place it on the line with a small offset (less than radius to guarantee blocking)
             const t = 0.3 + Math.random() * 0.4;
             const centerX = LASER_START.x + (TARGET.x - LASER_START.x) * t;
             const centerY = LASER_START.y + (TARGET.y - LASER_START.y) * t;
-            const offsetY = (Math.random() - 0.5) * 100;
             const radius = 25 + Math.random() * 25;
+            const offsetY = (Math.random() - 0.5) * radius * 0.8; // Offset less than radius
             obstacles.push({ 
                 x: centerX, 
                 y: centerY + offsetY, 
