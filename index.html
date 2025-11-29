@@ -796,9 +796,8 @@
                 placingMirror = { x, y, angle: 0 };
                 if (isTouch) {
                     isDragging = true; // On touch, immediately start dragging mode
-                } else {
-                    isDragging = true; // On desktop, we're in "rotation mode"
                 }
+                // On desktop, don't set isDragging yet - wait for mouse move
             } else if (!isTouch) {
                 // Desktop: second click confirms the mirror
                 confirmMirror();
