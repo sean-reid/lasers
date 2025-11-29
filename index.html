@@ -40,6 +40,26 @@
             margin-bottom: 0.5rem;
         }
 
+        .instructions-desktop {
+            display: none;
+        }
+
+        .instructions-mobile {
+            display: none;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .instructions-desktop {
+                display: inline;
+            }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            .instructions-mobile {
+                display: inline;
+            }
+        }
+
         .stats {
             display: flex;
             align-items: center;
@@ -287,7 +307,10 @@
 <body>
     <div class="header">
         <h1>Laser Mirror Puzzle</h1>
-        <p class="instructions">Tap to place, drag to rotate, then confirm!</p>
+        <p class="instructions">
+            <span class="instructions-desktop">Click to place, move to rotate, click again to confirm!</span>
+            <span class="instructions-mobile">Tap to place, drag to rotate!</span>
+        </p>
         <div class="stats">
             <span class="stat-label">Level: <span class="stat-value level" id="level">1</span></span>
             <span class="stat-label">Mirrors: <span class="stat-value mirrors" id="mirror-count">0</span></span>
@@ -336,6 +359,8 @@
         let gameWon = false;
         let level = 1;
         let shareUrl = '';
+        let isDragging = false;
+        let isTouch = false;
 
         // Fixed logical canvas size for consistent game state
         const LOGICAL_WIDTH = 800;
@@ -349,7 +374,10 @@
 
         function updateCanvasSize() {
             // Canvas size is now fixed, only update display size via CSS
-            draw();
+            // Force a redraw to ensure canvas is visible on mobile
+            requestAnimationFrame(() => {
+                draw();
+            });
         }
 
         function encodeObstacles(obs) {
@@ -633,6 +661,17 @@
         function draw() {
             ctx.clearRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
 
+            // Calculate laser path first to determine if target should be green
+            const allMirrors = placingMirror ? [...mirrors, { x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle }] : mirrors;
+            const { path, won } = traceLaser(allMirrors);
+
+            // Update game won state
+            if (!gameWon && won && !placingMirror) {
+                gameWon = true;
+                updateUI();
+            }
+
+            // Draw obstacles
             ctx.fillStyle = '#374151';
             obstacles.forEach(obs => {
                 ctx.beginPath();
@@ -640,10 +679,7 @@
                 ctx.fill();
             });
 
-            // Calculate laser path first to determine if target should be green
-            const allMirrors = placingMirror ? [...mirrors, { x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle }] : mirrors;
-            const { path, won } = traceLaser(allMirrors);
-
+            // Draw target (color based on current won status)
             ctx.fillStyle = won ? '#10b981' : '#ef4444';
             ctx.beginPath();
             ctx.arc(TARGET.x, TARGET.y, TARGET.radius, 0, Math.PI * 2);
@@ -658,11 +694,13 @@
             ctx.lineTo(TARGET.x, TARGET.y + TARGET.radius);
             ctx.stroke();
 
+            // Draw laser start point
             ctx.fillStyle = '#ef4444';
             ctx.beginPath();
             ctx.arc(LASER_START.x, LASER_START.y, 8, 0, Math.PI * 2);
             ctx.fill();
 
+            // Draw confirmed mirrors
             ctx.strokeStyle = '#3b82f6';
             ctx.lineWidth = 3;
             mirrors.forEach(mirror => {
@@ -685,14 +723,7 @@
                 ctx.fill();
             });
 
-            const allMirrors = placingMirror ? [...mirrors, { x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle }] : mirrors;
-            const { path, won } = traceLaser(allMirrors);
-
-            if (!gameWon && won && !placingMirror) {
-                gameWon = true;
-                updateUI();
-            }
-
+            // Draw laser path
             if (placingMirror) {
                 ctx.strokeStyle = won ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)';
                 ctx.lineWidth = 2;
@@ -716,6 +747,7 @@
             ctx.shadowBlur = 0;
             ctx.setLineDash([]);
 
+            // Draw placing mirror (if active)
             if (placingMirror) {
                 ctx.strokeStyle = 'rgba(251, 191, 36, 0.9)';
                 ctx.lineWidth = 4;
@@ -762,10 +794,19 @@
 
         function handleInteractionStart(e) {
             e.preventDefault();
+            isTouch = e.type.startsWith('touch');
             const { x, y } = getCanvasCoordinates(e);
 
             if (!placingMirror) {
                 placingMirror = { x, y, angle: 0 };
+                isDragging = true;
+            } else if (!isTouch) {
+                // Desktop: second click confirms the mirror
+                confirmMirror();
+                return;
+            } else {
+                // Touch: start dragging to rotate
+                isDragging = true;
             }
             updateUI();
             draw();
@@ -773,7 +814,7 @@
 
         function handleInteractionMove(e) {
             e.preventDefault();
-            if (!placingMirror) return;
+            if (!placingMirror || !isDragging) return;
 
             const { x, y } = getCanvasCoordinates(e);
             const angle = Math.atan2(y - placingMirror.y, x - placingMirror.x);
@@ -781,11 +822,22 @@
             draw();
         }
 
+        function handleInteractionEnd(e) {
+            e.preventDefault();
+            if (isTouch && placingMirror && isDragging) {
+                // Touch: release confirms the mirror
+                confirmMirror();
+            }
+            isDragging = false;
+        }
+
         function confirmMirror() {
             if (placingMirror) {
                 mirrors.push({ x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle });
                 placingMirror = null;
-                gameWon = false;
+                isDragging = false;
+                const { won } = traceLaser(mirrors);
+                gameWon = won;
                 updateUI();
                 draw();
             }
@@ -794,6 +846,7 @@
         function undoMirror() {
             if (placingMirror) {
                 placingMirror = null;
+                isDragging = false;
             } else if (mirrors.length > 0) {
                 mirrors.pop();
                 gameWon = false;
@@ -860,8 +913,10 @@
 
         canvas.addEventListener('mousedown', handleInteractionStart);
         canvas.addEventListener('mousemove', handleInteractionMove);
-        canvas.addEventListener('touchstart', handleInteractionStart);
-        canvas.addEventListener('touchmove', handleInteractionMove);
+        canvas.addEventListener('mouseup', handleInteractionEnd);
+        canvas.addEventListener('touchstart', handleInteractionStart, { passive: false });
+        canvas.addEventListener('touchmove', handleInteractionMove, { passive: false });
+        canvas.addEventListener('touchend', handleInteractionEnd, { passive: false });
 
         document.getElementById('confirm-btn').addEventListener('click', confirmMirror);
         document.getElementById('undo-btn').addEventListener('click', undoMirror);
@@ -874,6 +929,7 @@
         });
 
         window.addEventListener('resize', updateCanvasSize);
+        window.addEventListener('load', updateCanvasSize);
 
         updateCanvasSize();
         if (!loadGameFromURL()) {
