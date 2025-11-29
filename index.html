@@ -418,6 +418,12 @@
         }
 
         function generateObstacles() {
+            // Clear existing obstacles
+            obstacles = [];
+            mirrors = [];
+            placingMirror = null;
+            gameWon = false;
+            
             // Calculate screen area and aspect ratio for dynamic scaling
             const area = canvasSize.width * canvasSize.height;
             const aspectRatio = canvasSize.width / canvasSize.height;
