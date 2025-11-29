@@ -114,15 +114,6 @@
             opacity: 0.5;
         }
 
-        .btn-lock {
-            background-color: #d97706;
-            color: white;
-        }
-
-        .btn-lock:hover:not(:disabled) {
-            background-color: #b45309;
-        }
-
         .btn-confirm {
             background-color: #059669;
             color: white;
@@ -296,7 +287,7 @@
 <body>
     <div class="header">
         <h1>Laser Mirror Puzzle</h1>
-        <p class="instructions">Tap to place, drag to rotate, tap again to lock, then confirm!</p>
+        <p class="instructions">Tap to place, drag to rotate, then confirm!</p>
         <div class="stats">
             <span class="stat-label">Level: <span class="stat-value level" id="level">1</span></span>
             <span class="stat-label">Mirrors: <span class="stat-value mirrors" id="mirror-count">0</span></span>
@@ -309,7 +300,6 @@
     </div>
 
     <div class="controls">
-        <button id="lock-btn" class="btn-lock" style="display: none;">🔒 Lock</button>
         <button id="confirm-btn" class="btn-confirm" style="display: none;">✓ Confirm</button>
         <button id="undo-btn" class="btn-undo">↶ Undo</button>
         <button id="reset-btn" class="btn-reset">↻ Reset</button>
@@ -771,9 +761,7 @@
             const { x, y } = getCanvasCoordinates(e);
 
             if (!placingMirror) {
-                placingMirror = { x, y, angle: 0, locked: false };
-            } else if (!placingMirror.locked) {
-                placingMirror.locked = true;
+                placingMirror = { x, y, angle: 0 };
             }
             updateUI();
             draw();
@@ -781,7 +769,7 @@
 
         function handleInteractionMove(e) {
             e.preventDefault();
-            if (!placingMirror || placingMirror.locked) return;
+            if (!placingMirror) return;
 
             const { x, y } = getCanvasCoordinates(e);
             const angle = Math.atan2(y - placingMirror.y, x - placingMirror.x);
@@ -790,7 +778,7 @@
         }
 
         function confirmMirror() {
-            if (placingMirror && placingMirror.locked) {
+            if (placingMirror) {
                 mirrors.push({ x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle });
                 placingMirror = null;
                 gameWon = false;
@@ -859,8 +847,7 @@
             document.getElementById('success-message').style.display = gameWon ? 'inline' : 'none';
             document.getElementById('next-btn').style.display = gameWon ? 'flex' : 'none';
             
-            document.getElementById('lock-btn').style.display = (placingMirror && !placingMirror.locked) ? 'flex' : 'none';
-            document.getElementById('confirm-btn').style.display = (placingMirror && placingMirror.locked) ? 'flex' : 'none';
+            document.getElementById('confirm-btn').style.display = placingMirror ? 'flex' : 'none';
             
             const undoBtn = document.getElementById('undo-btn');
             undoBtn.disabled = mirrors.length === 0 && !placingMirror;
@@ -872,7 +859,6 @@
         canvas.addEventListener('touchstart', handleInteractionStart);
         canvas.addEventListener('touchmove', handleInteractionMove);
 
-        document.getElementById('lock-btn').addEventListener('click', handleInteractionStart);
         document.getElementById('confirm-btn').addEventListener('click', confirmMirror);
         document.getElementById('undo-btn').addEventListener('click', undoMirror);
         document.getElementById('reset-btn').addEventListener('click', resetGame);
