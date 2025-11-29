@@ -640,7 +640,11 @@
                 ctx.fill();
             });
 
-            ctx.fillStyle = gameWon ? '#10b981' : '#ef4444';
+            // Calculate laser path first to determine if target should be green
+            const allMirrors = placingMirror ? [...mirrors, { x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle }] : mirrors;
+            const { path, won } = traceLaser(allMirrors);
+
+            ctx.fillStyle = won ? '#10b981' : '#ef4444';
             ctx.beginPath();
             ctx.arc(TARGET.x, TARGET.y, TARGET.radius, 0, Math.PI * 2);
             ctx.fill();
