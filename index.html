@@ -345,27 +345,20 @@
         let placingMirror = null;
         let gameWon = false;
         let level = 1;
-        let canvasSize = { width: 800, height: 600 };
         let shareUrl = '';
 
-        const LASER_START = { x: 20, y: 0 };
-        const TARGET = { x: 0, y: 0, radius: 15 };
+        // Fixed logical canvas size for consistent game state
+        const LOGICAL_WIDTH = 800;
+        const LOGICAL_HEIGHT = 600;
+        const LASER_START = { x: 20, y: 300 };
+        const TARGET = { x: 780, y: 300, radius: 15 };
+
+        // Set fixed canvas size
+        canvas.width = LOGICAL_WIDTH;
+        canvas.height = LOGICAL_HEIGHT;
 
         function updateCanvasSize() {
-            const container = document.querySelector('.canvas-container');
-            const containerWidth = container.clientWidth;
-            const maxWidth = Math.min(containerWidth - 32, 800);
-            const aspectRatio = 4 / 3;
-            const height = maxWidth / aspectRatio;
-            
-            canvasSize = { width: maxWidth, height: Math.min(height, 600) };
-            canvas.width = canvasSize.width;
-            canvas.height = canvasSize.height;
-            
-            LASER_START.y = canvasSize.height / 2;
-            TARGET.x = canvasSize.width - 20;
-            TARGET.y = canvasSize.height / 2;
-            
+            // Canvas size is now fixed, only update display size via CSS
             draw();
         }
 
@@ -424,32 +417,22 @@
             placingMirror = null;
             gameWon = false;
             
-            // Calculate screen area and aspect ratio for dynamic scaling
-            const area = canvasSize.width * canvasSize.height;
-            const aspectRatio = canvasSize.width / canvasSize.height;
-            const isMobile = canvasSize.width < 640;
-            
-            // Dynamic obstacle count based on area and level
-            const baseCount = Math.floor(area / 20000); // ~1 obstacle per 20k pixels
-            const numObstacles = baseCount + level * 2;
-            
-            // Dynamic radius scaling
-            const minRadius = isMobile ? 12 : 18;
-            const maxRadius = isMobile ? 25 : 35;
+            // Fixed obstacle generation for consistent puzzles
+            const numObstacles = 6 + level * 2;
+            const minRadius = 18;
+            const maxRadius = 35;
             const radiusVariability = maxRadius - minRadius;
             
             for (let i = 0; i < numObstacles; i++) {
                 let attempts = 0;
                 while (attempts < 100) {
-                    // Variable radius with some larger obstacles
                     const radiusRandom = Math.random();
                     const radius = minRadius + radiusRandom * radiusVariability;
                     
-                    // Reduced margins for mobile to use full screen
-                    const marginX = isMobile ? 80 : 150;
-                    const marginXEnd = isMobile ? 80 : 150;
-                    const x = marginX + Math.random() * (canvasSize.width - marginX - marginXEnd);
-                    const y = radius + Math.random() * (canvasSize.height - radius * 2);
+                    const marginX = 150;
+                    const marginXEnd = 150;
+                    const x = marginX + Math.random() * (LOGICAL_WIDTH - marginX - marginXEnd);
+                    const y = radius + Math.random() * (LOGICAL_HEIGHT - radius * 2);
                     
                     let valid = true;
                     
@@ -618,10 +601,10 @@
                 }
 
                 const boundaries = [
-                    { p1: { x: 0, y: 0 }, p2: { x: canvasSize.width, y: 0 } },
-                    { p1: { x: canvasSize.width, y: 0 }, p2: { x: canvasSize.width, y: canvasSize.height } },
-                    { p1: { x: canvasSize.width, y: canvasSize.height }, p2: { x: 0, y: canvasSize.height } },
-                    { p1: { x: 0, y: canvasSize.height }, p2: { x: 0, y: 0 } }
+                    { p1: { x: 0, y: 0 }, p2: { x: LOGICAL_WIDTH, y: 0 } },
+                    { p1: { x: LOGICAL_WIDTH, y: 0 }, p2: { x: LOGICAL_WIDTH, y: LOGICAL_HEIGHT } },
+                    { p1: { x: LOGICAL_WIDTH, y: LOGICAL_HEIGHT }, p2: { x: 0, y: LOGICAL_HEIGHT } },
+                    { p1: { x: 0, y: LOGICAL_HEIGHT }, p2: { x: 0, y: 0 } }
                 ];
 
                 boundaries.forEach((boundary) => {
@@ -658,7 +641,7 @@
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
+            ctx.clearRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
 
             ctx.fillStyle = '#374151';
             obstacles.forEach(obs => {
@@ -770,9 +753,16 @@
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             
+            // Transform from display coordinates to logical canvas coordinates
+            const displayX = clientX - rect.left;
+            const displayY = clientY - rect.top;
+            
+            const scaleX = LOGICAL_WIDTH / rect.width;
+            const scaleY = LOGICAL_HEIGHT / rect.height;
+            
             return {
-                x: clientX - rect.left,
-                y: clientY - rect.top
+                x: displayX * scaleX,
+                y: displayY * scaleY
             };
         }
 
