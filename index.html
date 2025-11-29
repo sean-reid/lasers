@@ -323,7 +323,6 @@
     </div>
 
     <div class="controls">
-        <button id="confirm-btn" class="btn-confirm" style="display: none;">✓ Confirm</button>
         <button id="undo-btn" class="btn-undo">↶ Undo</button>
         <button id="reset-btn" class="btn-reset">↻ Reset</button>
         <button id="share-btn" class="btn-share">⚡ Share</button>
@@ -909,8 +908,6 @@
             document.getElementById('success-message').style.display = gameWon ? 'inline' : 'none';
             document.getElementById('next-btn').style.display = gameWon ? 'flex' : 'none';
             
-            document.getElementById('confirm-btn').style.display = placingMirror ? 'flex' : 'none';
-            
             const undoBtn = document.getElementById('undo-btn');
             undoBtn.disabled = mirrors.length === 0 && !placingMirror;
             undoBtn.textContent = placingMirror ? '↶ Cancel' : '↶ Undo';
@@ -923,7 +920,6 @@
         canvas.addEventListener('touchmove', handleInteractionMove, { passive: false });
         canvas.addEventListener('touchend', handleInteractionEnd, { passive: false });
 
-        document.getElementById('confirm-btn').addEventListener('click', confirmMirror);
         document.getElementById('undo-btn').addEventListener('click', undoMirror);
         document.getElementById('reset-btn').addEventListener('click', resetGame);
         document.getElementById('share-btn').addEventListener('click', showShareModal);
