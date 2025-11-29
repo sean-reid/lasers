@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laser Mirror Puzzle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #111827;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .instructions {
+            color: #d1d5db;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            font-size: 1rem;
+        }
+
+        .stat-label {
+            color: white;
+        }
+
+        .stat-value {
+            font-weight: bold;
+        }
+
+        .level { color: #60a5fa; }
+        .mirrors { color: #fbbf24; }
+        .success {
+            color: #10b981;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .canvas-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        canvas {
+            border: 4px solid #374151;
+            border-radius: 0.5rem;
+            cursor: crosshair;
+            background-color: #1f2937;
+            width: 100%;
+            height: auto;
+            display: block;
+            touch-action: none;
+        }
+
+        .controls {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:disabled {
+            background-color: #4b5563;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .btn-lock {
+            background-color: #d97706;
+            color: white;
+        }
+
+        .btn-lock:hover:not(:disabled) {
+            background-color: #b45309;
+        }
+
+        .btn-confirm {
+            background-color: #059669;
+            color: white;
+        }
+
+        .btn-confirm:hover:not(:disabled) {
+            background-color: #047857;
+        }
+
+        .btn-undo {
+            background-color: #ea580c;
+            color: white;
+        }
+
+        .btn-undo:hover:not(:disabled) {
+            background-color: #c2410c;
+        }
+
+        .btn-reset {
+            background-color: #2563eb;
+            color: white;
+        }
+
+        .btn-reset:hover:not(:disabled) {
+            background-color: #1d4ed8;
+        }
+
+        .btn-share {
+            background-color: #4f46e5;
+            color: white;
+        }
+
+        .btn-share:hover:not(:disabled) {
+            background-color: #4338ca;
+        }
+
+        .btn-next {
+            background-color: #7c3aed;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .btn-next:hover:not(:disabled) {
+            background-color: #6d28d9;
+        }
+
+        .hint {
+            margin-top: 1.5rem;
+            color: #9ca3af;
+            font-size: 0.875rem;
+            text-align: center;
+            max-width: 42rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 50;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #1f2937;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            max-width: 28rem;
+            width: 100%;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0;
+            font-size: 1.5rem;
+        }
+
+        .modal-close:hover {
+            color: white;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .modal-text {
+            color: #d1d5db;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .share-url {
+            background-color: #111827;
+            border-radius: 0.25rem;
+            padding: 0.75rem;
+            word-break: break-all;
+            font-size: 0.875rem;
+            color: #d1d5db;
+            margin-bottom: 1rem;
+        }
+
+        .score-box {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            background-color: #374151;
+            border: 2px solid #4b5563;
+            text-align: center;
+        }
+
+        .score-status {
+            font-weight: bold;
+            font-size: 1.125rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .score-status.solved { color: #10b981; }
+        .score-status.progress { color: #fb923c; }
+
+        .score-count {
+            color: #d1d5db;
+            font-size: 0.875rem;
+        }
+
+        .score-hint {
+            color: #9ca3af;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .instructions {
+                font-size: 0.75rem;
+            }
+
+            .stats {
+                font-size: 0.875rem;
+                gap: 0.75rem;
+            }
+
+            button {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+            }
+
+            canvas {
+                border-width: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Laser Mirror Puzzle</h1>
+        <p class="instructions">Tap to place, drag to rotate, tap again to lock, then confirm!</p>
+        <div class="stats">
+            <span class="stat-label">Level: <span class="stat-value level" id="level">1</span></span>
+            <span class="stat-label">Mirrors: <span class="stat-value mirrors" id="mirror-count">0</span></span>
+            <span class="success" id="success-message" style="display: none;">🎉 Success!</span>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="game-canvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <button id="lock-btn" class="btn-lock" style="display: none;">🔒 Lock</button>
+        <button id="confirm-btn" class="btn-confirm" style="display: none;">✓ Confirm</button>
+        <button id="undo-btn" class="btn-undo">↶ Undo</button>
+        <button id="reset-btn" class="btn-reset">↻ Reset</button>
+        <button id="share-btn" class="btn-share">⚡ Share</button>
+        <button id="next-btn" class="btn-next" style="display: none;">Next Level →</button>
+    </div>
+
+    <div class="modal" id="share-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">×</button>
+            <h2 class="modal-title">Share This Puzzle</h2>
+            <p class="modal-text">
+                Challenge your friends with this exact puzzle! They'll face the same obstacles and try to beat your mirror count.
+            </p>
+            <div class="share-url" id="share-url"></div>
+            <button id="copy-btn" class="btn-share" style="width: 100%; justify-content: center;">📋 Copy Link</button>
+            <div class="score-box">
+                <div id="score-display"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hint">
+        <p>💡 Fewer mirrors = better score! Share your puzzle to challenge friends!</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let mirrors = [];
+        let obstacles = [];
+        let placingMirror = null;
+        let gameWon = false;
+        let level = 1;
+        let canvasSize = { width: 800, height: 600 };
+        let shareUrl = '';
+
+        const LASER_START = { x: 20, y: 0 };
+        const TARGET = { x: 0, y: 0, radius: 15 };
+
+        function updateCanvasSize() {
+            const container = document.querySelector('.canvas-container');
+            const containerWidth = container.clientWidth;
+            const maxWidth = Math.min(containerWidth - 32, 800);
+            const aspectRatio = 4 / 3;
+            const height = maxWidth / aspectRatio;
+            
+            canvasSize = { width: maxWidth, height: Math.min(height, 600) };
+            canvas.width = canvasSize.width;
+            canvas.height = canvasSize.height;
+            
+            LASER_START.y = canvasSize.height / 2;
+            TARGET.x = canvasSize.width - 20;
+            TARGET.y = canvasSize.height / 2;
+            
+            draw();
+        }
+
+        function encodeObstacles(obs) {
+            const data = obs.map(o => [
+                Math.round(o.x * 100) / 100,
+                Math.round(o.y * 100) / 100,
+                Math.round(o.radius * 100) / 100
+            ]);
+            const json = JSON.stringify(data);
+            return btoa(json).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        function decodeObstacles(str) {
+            try {
+                const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+                const padding = '='.repeat((4 - base64.length % 4) % 4);
+                const json = atob(base64 + padding);
+                const data = JSON.parse(json);
+                return data.map(([x, y, radius]) => ({ x, y, radius }));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function loadGameFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const gameData = params.get('game');
+            
+            if (gameData) {
+                const decodedObstacles = decodeObstacles(gameData);
+                if (decodedObstacles) {
+                    obstacles = decodedObstacles;
+                    mirrors = [];
+                    gameWon = false;
+                    updateUI();
+                    draw();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function updateShareUrl() {
+            if (obstacles.length > 0) {
+                const encoded = encodeObstacles(obstacles);
+                shareUrl = `${window.location.origin}${window.location.pathname}?game=${encoded}`;
+            }
+        }
+
+        function generateObstacles() {
+            obstacles = [];
+            const numObstacles = 10 + level * 3;
+            
+            for (let i = 0; i < numObstacles; i++) {
+                let attempts = 0;
+                while (attempts < 100) {
+                    const radius = 20 + Math.random() * 30;
+                    const x = 150 + Math.random() * (canvasSize.width - 300);
+                    const y = radius + Math.random() * (canvasSize.height - radius * 2);
+                    
+                    let valid = true;
+                    
+                    if (Math.hypot(x - LASER_START.x, y - LASER_START.y) < radius + 50) {
+                        valid = false;
+                    }
+                    
+                    if (Math.hypot(x - TARGET.x, y - TARGET.y) < radius + 50) {
+                        valid = false;
+                    }
+                    
+                    for (const obs of obstacles) {
+                        if (Math.hypot(x - obs.x, y - obs.y) < radius + obs.radius + 10) {
+                            valid = false;
+                            break;
+                        }
+                    }
+                    
+                    if (valid) {
+                        obstacles.push({ x, y, radius });
+                        break;
+                    }
+                    attempts++;
+                }
+            }
+            
+            const directPathBlocked = obstacles.some(obs => {
+                const hit = lineIntersectsCircle(LASER_START, TARGET, obs);
+                return hit !== null;
+            });
+            
+            if (!directPathBlocked) {
+                const t = 0.3 + Math.random() * 0.4;
+                const centerX = LASER_START.x + (TARGET.x - LASER_START.x) * t;
+                const centerY = LASER_START.y + (TARGET.y - LASER_START.y) * t;
+                const offsetY = (Math.random() - 0.5) * 100;
+                const radius = 25 + Math.random() * 25;
+                obstacles.push({ 
+                    x: centerX, 
+                    y: centerY + offsetY, 
+                    radius 
+                });
+            }
+            
+            mirrors = [];
+            gameWon = false;
+            updateShareUrl();
+            updateUI();
+            draw();
+        }
+
+        function lineIntersectsCircle(p1, p2, circle) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const fx = p1.x - circle.x;
+            const fy = p1.y - circle.y;
+            
+            const a = dx * dx + dy * dy;
+            const b = 2 * (fx * dx + fy * dy);
+            const c = fx * fx + fy * fy - circle.radius * circle.radius;
+            
+            const discriminant = b * b - 4 * a * c;
+            
+            if (discriminant < 0) return null;
+            
+            const t1 = (-b - Math.sqrt(discriminant)) / (2 * a);
+            const t2 = (-b + Math.sqrt(discriminant)) / (2 * a);
+            
+            if (t1 >= 0 && t1 <= 1) {
+                return { x: p1.x + t1 * dx, y: p1.y + t1 * dy, t: t1 };
+            }
+            if (t2 >= 0 && t2 <= 1) {
+                return { x: p1.x + t2 * dx, y: p1.y + t2 * dy, t: t2 };
+            }
+            
+            return null;
+        }
+
+        function reflect(direction, normal) {
+            const dot = direction.x * normal.x + direction.y * normal.y;
+            return {
+                x: direction.x - 2 * dot * normal.x,
+                y: direction.y - 2 * dot * normal.y
+            };
+        }
+
+        function lineLineIntersection(p1, p2, p3, p4) {
+            const x1 = p1.x, y1 = p1.y, x2 = p2.x, y2 = p2.y;
+            const x3 = p3.x, y3 = p3.y, x4 = p4.x, y4 = p4.y;
+            
+            const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+            if (Math.abs(denom) < 0.0001) return null;
+            
+            const t1 = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+            const t2 = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+            
+            if (t2 >= 0 && t2 <= 1) {
+                return {
+                    x: x1 + t1 * (x2 - x1),
+                    y: y1 + t1 * (y2 - y1),
+                    t1,
+                    t2
+                };
+            }
+            
+            return null;
+        }
+
+        function traceLaser(mirrorsToUse) {
+            const path = [];
+            let currentPos = { ...LASER_START };
+            let currentDir = { x: 1, y: 0 };
+            const maxBounces = 50;
+            let bounces = 0;
+
+            path.push({ ...currentPos });
+
+            while (bounces < maxBounces) {
+                let nearestHit = null;
+                let nearestT = Infinity;
+                let hitType = null;
+                let hitIndex = -1;
+
+                const farPoint = {
+                    x: currentPos.x + currentDir.x * 2000,
+                    y: currentPos.y + currentDir.y * 2000
+                };
+
+                mirrorsToUse.forEach((mirror, idx) => {
+                    const mirrorLen = 60;
+                    const halfLen = mirrorLen / 2;
+                    const cos = Math.cos(mirror.angle);
+                    const sin = Math.sin(mirror.angle);
+                    
+                    const m1 = {
+                        x: mirror.x - halfLen * cos,
+                        y: mirror.y - halfLen * sin
+                    };
+                    const m2 = {
+                        x: mirror.x + halfLen * cos,
+                        y: mirror.y + halfLen * sin
+                    };
+
+                    const intersection = lineLineIntersection(currentPos, farPoint, m1, m2);
+                    if (intersection && intersection.t1 > 0.001 && intersection.t1 < nearestT) {
+                        nearestHit = intersection;
+                        nearestT = intersection.t1;
+                        hitType = 'mirror';
+                        hitIndex = idx;
+                    }
+                });
+
+                obstacles.forEach((obs) => {
+                    const hit = lineIntersectsCircle(currentPos, farPoint, obs);
+                    if (hit && hit.t > 0.001 && hit.t < nearestT) {
+                        nearestHit = hit;
+                        nearestT = hit.t;
+                        hitType = 'obstacle';
+                    }
+                });
+
+                const targetHit = lineIntersectsCircle(currentPos, farPoint, TARGET);
+                if (targetHit && targetHit.t > 0.001 && targetHit.t < nearestT) {
+                    path.push({ x: targetHit.x, y: targetHit.y });
+                    return { path, won: true };
+                }
+
+                const boundaries = [
+                    { p1: { x: 0, y: 0 }, p2: { x: canvasSize.width, y: 0 } },
+                    { p1: { x: canvasSize.width, y: 0 }, p2: { x: canvasSize.width, y: canvasSize.height } },
+                    { p1: { x: canvasSize.width, y: canvasSize.height }, p2: { x: 0, y: canvasSize.height } },
+                    { p1: { x: 0, y: canvasSize.height }, p2: { x: 0, y: 0 } }
+                ];
+
+                boundaries.forEach((boundary) => {
+                    const intersection = lineLineIntersection(currentPos, farPoint, boundary.p1, boundary.p2);
+                    if (intersection && intersection.t1 > 0.001 && intersection.t1 < nearestT) {
+                        nearestHit = intersection;
+                        nearestT = intersection.t1;
+                        hitType = 'boundary';
+                    }
+                });
+
+                if (!nearestHit) break;
+
+                if (hitType === 'obstacle' || hitType === 'boundary') {
+                    path.push({ x: nearestHit.x, y: nearestHit.y });
+                    break;
+                }
+
+                if (hitType === 'mirror') {
+                    const mirror = mirrorsToUse[hitIndex];
+                    const normal = {
+                        x: -Math.sin(mirror.angle),
+                        y: Math.cos(mirror.angle)
+                    };
+                    
+                    currentDir = reflect(currentDir, normal);
+                    currentPos = { x: nearestHit.x, y: nearestHit.y };
+                    path.push({ ...currentPos });
+                    bounces++;
+                }
+            }
+
+            return { path, won: false };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
+
+            ctx.fillStyle = '#374151';
+            obstacles.forEach(obs => {
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.fillStyle = gameWon ? '#10b981' : '#ef4444';
+            ctx.beginPath();
+            ctx.arc(TARGET.x, TARGET.y, TARGET.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(TARGET.x - TARGET.radius, TARGET.y);
+            ctx.lineTo(TARGET.x + TARGET.radius, TARGET.y);
+            ctx.moveTo(TARGET.x, TARGET.y - TARGET.radius);
+            ctx.lineTo(TARGET.x, TARGET.y + TARGET.radius);
+            ctx.stroke();
+
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(LASER_START.x, LASER_START.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            mirrors.forEach(mirror => {
+                const len = 60;
+                const halfLen = len / 2;
+                const cos = Math.cos(mirror.angle);
+                const sin = Math.sin(mirror.angle);
+                
+                ctx.beginPath();
+                ctx.moveTo(mirror.x - halfLen * cos, mirror.y - halfLen * sin);
+                ctx.lineTo(mirror.x + halfLen * cos, mirror.y + halfLen * sin);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#3b82f6';
+                ctx.beginPath();
+                ctx.arc(mirror.x - halfLen * cos, mirror.y - halfLen * sin, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(mirror.x + halfLen * cos, mirror.y + halfLen * sin, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            const allMirrors = placingMirror ? [...mirrors, { x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle }] : mirrors;
+            const { path, won } = traceLaser(allMirrors);
+
+            if (!gameWon && won && !placingMirror) {
+                gameWon = true;
+                updateUI();
+            }
+
+            if (placingMirror) {
+                ctx.strokeStyle = won ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = won ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)';
+            } else {
+                ctx.strokeStyle = won ? '#10b981' : '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([]);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = won ? '#10b981' : '#ef4444';
+            }
+            
+            ctx.beginPath();
+            path.forEach((point, i) => {
+                if (i === 0) ctx.moveTo(point.x, point.y);
+                else ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.setLineDash([]);
+
+            if (placingMirror) {
+                ctx.strokeStyle = 'rgba(251, 191, 36, 0.9)';
+                ctx.lineWidth = 4;
+                const len = 60;
+                const halfLen = len / 2;
+                const cos = Math.cos(placingMirror.angle);
+                const sin = Math.sin(placingMirror.angle);
+                
+                ctx.beginPath();
+                ctx.moveTo(placingMirror.x - halfLen * cos, placingMirror.y - halfLen * sin);
+                ctx.lineTo(placingMirror.x + halfLen * cos, placingMirror.y + halfLen * sin);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#fbbf24';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#fbbf24';
+                ctx.beginPath();
+                ctx.arc(placingMirror.x - halfLen * cos, placingMirror.y - halfLen * sin, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(placingMirror.x + halfLen * cos, placingMirror.y + halfLen * sin, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function handleInteractionStart(e) {
+            e.preventDefault();
+            const { x, y } = getCanvasCoordinates(e);
+
+            if (!placingMirror) {
+                placingMirror = { x, y, angle: 0, locked: false };
+            } else if (!placingMirror.locked) {
+                placingMirror.locked = true;
+            }
+            updateUI();
+            draw();
+        }
+
+        function handleInteractionMove(e) {
+            e.preventDefault();
+            if (!placingMirror || placingMirror.locked) return;
+
+            const { x, y } = getCanvasCoordinates(e);
+            const angle = Math.atan2(y - placingMirror.y, x - placingMirror.x);
+            placingMirror.angle = angle;
+            draw();
+        }
+
+        function confirmMirror() {
+            if (placingMirror && placingMirror.locked) {
+                mirrors.push({ x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle });
+                placingMirror = null;
+                gameWon = false;
+                updateUI();
+                draw();
+            }
+        }
+
+        function undoMirror() {
+            if (placingMirror) {
+                placingMirror = null;
+            } else if (mirrors.length > 0) {
+                mirrors.pop();
+                gameWon = false;
+            }
+            updateUI();
+            draw();
+        }
+
+        function resetGame() {
+            generateObstacles();
+            window.history.pushState({}, '', window.location.pathname);
+        }
+
+        function nextLevel() {
+            level++;
+            generateObstacles();
+            window.history.pushState({}, '', window.location.pathname);
+        }
+
+        function showShareModal() {
+            document.getElementById('share-url').textContent = shareUrl;
+            
+            const scoreDisplay = document.getElementById('score-display');
+            if (gameWon) {
+                scoreDisplay.innerHTML = `
+                    <div class="score-status solved">✅ Solved!</div>
+                    <p class="score-count">
+                        Your score: <span class="stat-value mirrors">${mirrors.length}</span> mirror${mirrors.length !== 1 ? 's' : ''}
+                    </p>
+                    <p class="score-hint">Can your friends do better?</p>
+                `;
+            } else {
+                scoreDisplay.innerHTML = `
+                    <div class="score-status progress">🚧 In Progress</div>
+                    <p class="score-count">
+                        Current: <span class="stat-value mirrors">${mirrors.length}</span> mirror${mirrors.length !== 1 ? 's' : ''}
+                    </p>
+                    <p class="score-hint">Puzzle not yet solved - share anyway!</p>
+                `;
+            }
+            
+            document.getElementById('share-modal').classList.add('show');
+        }
+
+        function copyShareUrl() {
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('Link copied to clipboard! Share it with friends!');
+                document.getElementById('share-modal').classList.remove('show');
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('level').textContent = level;
+            document.getElementById('mirror-count').textContent = mirrors.length;
+            document.getElementById('success-message').style.display = gameWon ? 'inline' : 'none';
+            document.getElementById('next-btn').style.display = gameWon ? 'flex' : 'none';
+            
+            document.getElementById('lock-btn').style.display = (placingMirror && !placingMirror.locked) ? 'flex' : 'none';
+            document.getElementById('confirm-btn').style.display = (placingMirror && placingMirror.locked) ? 'flex' : 'none';
+            
+            const undoBtn = document.getElementById('undo-btn');
+            undoBtn.disabled = mirrors.length === 0 && !placingMirror;
+            undoBtn.textContent = placingMirror ? '↶ Cancel' : '↶ Undo';
+        }
+
+        canvas.addEventListener('mousedown', handleInteractionStart);
+        canvas.addEventListener('mousemove', handleInteractionMove);
+        canvas.addEventListener('touchstart', handleInteractionStart);
+        canvas.addEventListener('touchmove', handleInteractionMove);
+
+        document.getElementById('lock-btn').addEventListener('click', handleInteractionStart);
+        document.getElementById('confirm-btn').addEventListener('click', confirmMirror);
+        document.getElementById('undo-btn').addEventListener('click', undoMirror);
+        document.getElementById('reset-btn').addEventListener('click', resetGame);
+        document.getElementById('share-btn').addEventListener('click', showShareModal);
+        document.getElementById('next-btn').addEventListener('click', nextLevel);
+        document.getElementById('copy-btn').addEventListener('click', copyShareUrl);
+        document.getElementById('modal-close').addEventListener('click', () => {
+            document.getElementById('share-modal').classList.remove('show');
+        });
+
+        window.addEventListener('resize', updateCanvasSize);
+
+        updateCanvasSize();
+        if (!loadGameFromURL()) {
+            generateObstacles();
+        }
+    </script>
+</body>
+</html>
