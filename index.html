@@ -799,14 +799,15 @@
             if (!placingMirror) {
                 // First interaction: place the mirror
                 placingMirror = { x, y, angle: 0 };
-                isDragging = !isTouch; // On desktop, we're in "rotation mode", not dragging
-            } else if (!isTouch && !isDragging) {
-                // Desktop: second click confirms the mirror (only if we're not currently dragging)
+                if (isTouch) {
+                    isDragging = true; // On touch, immediately start dragging mode
+                } else {
+                    isDragging = true; // On desktop, we're in "rotation mode"
+                }
+            } else if (!isTouch) {
+                // Desktop: second click confirms the mirror
                 confirmMirror();
                 return;
-            } else if (isTouch) {
-                // Touch: start dragging to rotate
-                isDragging = true;
             }
             updateUI();
             draw();
@@ -816,9 +817,8 @@
             e.preventDefault();
             if (!placingMirror) return;
             
-            // On desktop (not touch), always allow rotation when mirror is placing
-            // On touch, only rotate if dragging
-            if (!isTouch || isDragging) {
+            // Always allow rotation when mirror is placing and we're dragging
+            if (isDragging) {
                 const { x, y } = getCanvasCoordinates(e);
                 const angle = Math.atan2(y - placingMirror.y, x - placingMirror.x);
                 placingMirror.angle = angle;
