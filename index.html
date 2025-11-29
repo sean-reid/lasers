@@ -781,7 +781,8 @@
             if (placingMirror) {
                 mirrors.push({ x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle });
                 placingMirror = null;
-                gameWon = false;
+                const { won } = traceLaser(mirrors);
+                gameWon = won;
                 updateUI();
                 draw();
             }
