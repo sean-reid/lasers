@@ -811,7 +811,12 @@
             e.preventDefault();
             if (!placingMirror) return;
             
-            // Always allow rotation when mirror is placing and we're dragging
+            // On desktop, any mouse movement while placing enables rotation
+            if (!isTouch && placingMirror) {
+                isDragging = true;
+            }
+            
+            // Allow rotation when mirror is placing and we're dragging
             if (isDragging) {
                 const { x, y } = getCanvasCoordinates(e);
                 const angle = Math.atan2(y - placingMirror.y, x - placingMirror.x);
