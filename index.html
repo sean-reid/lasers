@@ -662,8 +662,8 @@
             ctx.clearRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
 
             // Calculate laser path first to determine if target should be green
-            const allMirrors = placingMirror ? [...mirrors, { x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle }] : mirrors;
-            const { path, won } = traceLaser(allMirrors);
+            const mirrorsToTrace = placingMirror ? [...mirrors, { x: placingMirror.x, y: placingMirror.y, angle: placingMirror.angle }] : mirrors;
+            const { path, won } = traceLaser(mirrorsToTrace);
 
             // Update game won state
             if (!gameWon && won && !placingMirror) {
